@@ -1,27 +1,45 @@
 from openai import OpenAI
 from typing import List, Dict, Tuple
 import json
+import requests
+import tempfile
+import os
 from app.config import settings
 
 
 
-async def transcribe_audio(file_path: str) -> str:
-
+async def transcribe_audio(file_url: str) -> str:
+    """
+    Transcribe audio file using OpenAI Whisper API
+    """
     client = OpenAI(
         api_key=settings.OPENAI_API_KEY
     )
 
-    """
-    Transcribe audio file using OpenAI Whisper API
-    """
     try:
-        with open(file_path, "rb") as audio_file:
-            transcript = client.audio.transcriptions.create(
-                model="whisper-1",
-                file=audio_file,
-                response_format="text"
-            )
-        return transcript
+        # Download the file from Cloudinary
+        response = requests.get(file_url)
+        response.raise_for_status()  # Raise an exception for bad status codes
+
+        # Create a temporary file
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.mp3') as temp_file:
+            temp_file.write(response.content)
+            temp_file_path = temp_file.name
+
+        try:
+            # Transcribe the temporary file
+            with open(temp_file_path, 'rb') as audio_file:
+                transcript = client.audio.transcriptions.create(
+                    model="whisper-1",
+                    file=audio_file,
+                    response_format="text"
+                )
+            return transcript
+        finally:
+            # Clean up the temporary file
+            if os.path.exists(temp_file_path):
+                os.remove(temp_file_path)
+
     except Exception as e:
         print(f"Error transcribing audio: {str(e)}")
         raise

@@ -5,14 +5,13 @@ from typing import List, Optional
 import json
 import os
 import aiofiles
-from urllib.parse import quote
 
 from app.database import get_db
 from app.models.models import User, Podcast, KeyPoint
 from app.schemas.schemas import PodcastCreate, Podcast as PodcastSchema, KeyPoint as KeyPointSchema
 from app.routers.auth import get_current_user
 from app.services.openai_service import transcribe_audio, extract_key_points
-from app.services.cloudinary_service import create_audio_clip, delete_audio
+from app.services.cloudinary_service import upload_audio, create_audio_clip, delete_audio
 from app.config import settings, ALLOWED_AUDIO_TYPES, MAX_FILE_SIZE
 
 router = APIRouter()
@@ -45,19 +44,13 @@ async def create_podcast(
                 detail=f"File size exceeds maximum allowed size of {MAX_FILE_SIZE/1024/1024}MB"
             )
         
-        # Create a unique filename
-        file_extension = os.path.splitext(file.filename)[1]
-        filename = f"{title.lower().replace(' ', '_')}_{current_user.id}{file_extension}"
-        file_path = os.path.join(UPLOAD_DIR, filename)
-        
-        # Save file locally
-        async with aiofiles.open(file_path, 'wb') as f:
-            await f.write(file_contents)
+        # Upload to Cloudinary
+        cloudinary_url = await upload_audio(file_contents)
         
         # Create podcast record
         db_podcast = Podcast(
             title=title,
-            file_path=file_path,
+            file_path=cloudinary_url,
             owner_id=current_user.id
         )
         db.add(db_podcast)
@@ -65,7 +58,7 @@ async def create_podcast(
         db.refresh(db_podcast)
         
         # Start transcription and key point extraction
-        transcript = await transcribe_audio(file_path)
+        transcript = await transcribe_audio(cloudinary_url)
         key_points = await extract_key_points(transcript)
         
         # Update podcast with transcript
@@ -74,7 +67,7 @@ async def create_podcast(
         
         # Create key points
         for point in key_points:
-            clip_url = await create_audio_clip(file_path, point["start_time"], point["end_time"])
+            clip_url = await create_audio_clip(cloudinary_url, point["start_time"], point["end_time"])
             db_key_point = KeyPoint(
                 content=point["content"],
                 start_time=point["start_time"],
@@ -89,9 +82,10 @@ async def create_podcast(
         return db_podcast
         
     except Exception as e:
-        # Clean up file if there was an error
-        if 'file_path' in locals() and os.path.exists(file_path):
-            os.remove(file_path)
+        # If there's an error, try to clean up any created resources
+        if 'db_podcast' in locals():
+            db.delete(db_podcast)
+            db.commit()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e)

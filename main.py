@@ -36,12 +36,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# # Configure JWT security scheme
-# app.swagger_ui_init_oauth = {
-#     "usePkceWithAuthorizationCodeGrant": True,
-#     "useBasicAuthenticationWithAccessCodeGrant": True
-# }
-
 # Include routers
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["Authentication"])
 app.include_router(podcasts.router, prefix="/api/v1/podcasts", tags=["Podcasts"])
@@ -50,5 +44,6 @@ app.include_router(podcasts.router, prefix="/api/v1/podcasts", tags=["Podcasts"]
 async def root():
     return {"message": "Welcome to Podcast Management API"}
 
+# For local development
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True) 
