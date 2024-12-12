@@ -3,7 +3,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm, SecurityScopes
 from sqlalchemy.orm import Session
 from typing import List, Optional
-import uvicorn
 import os
 from dotenv import load_dotenv
 
@@ -36,19 +35,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# # Configure JWT security scheme
-# app.swagger_ui_init_oauth = {
-#     "usePkceWithAuthorizationCodeGrant": True,
-#     "useBasicAuthenticationWithAccessCodeGrant": True
-# }
-
 # Include routers
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["Authentication"])
 app.include_router(podcasts.router, prefix="/api/v1/podcasts", tags=["Podcasts"])
 
 @app.get("/")
 async def root():
-    return {"message": "Welcome to Podcast Management API"}
-
-if __name__ == "__main__":
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True) 
+    return {"message": "Welcome to Podcast Management API"} 
