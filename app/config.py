@@ -24,6 +24,9 @@ class Settings(BaseSettings):
     SUPABASE_KEY: str = os.getenv("SUPABASE_KEY")
     SUPABASE_DB_URL: str = os.getenv("SUPABASE_DB_URL")
 
+    # Render Settings
+    RENDER_API_KEY: str = os.getenv("RENDER_API_KEY")
+
     class Config:
         env_file = ".env"
 

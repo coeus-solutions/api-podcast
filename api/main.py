@@ -41,4 +41,4 @@ app.include_router(podcasts.router, prefix="/api/v1/podcasts", tags=["Podcasts"]
 
 @app.get("/")
 async def root():
-    return {"message": "Welcome to Podcast Management API"} 
+    return {"message": "Welcome to Podcast Management API"}
