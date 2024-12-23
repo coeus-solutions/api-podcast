@@ -1,0 +1,9 @@
+services:
+  podcast-api:
+    autoDeploy: false
+    runtime: python
+    type: web
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    preDeployCommand: deploy/init.sh
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
