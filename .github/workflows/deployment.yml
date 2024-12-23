@@ -1,7 +1,9 @@
 name: Deploy to Render
+
 on:
   push:
     branches: [ master ]
+  workflow_dispatch:
 
 jobs:
   deploy:
@@ -9,11 +11,34 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Deploy to production
-        uses: johnbeynon/render-deploy-action@v0.0.8
-        with:
-          service-id: ${{ secrets.RENDER_SERVICE_ID }}
-          api-key: ${{ secrets.RENDER_API_KEY }}
+      - name: Trigger Render Deploy
+        id: deploy
+        run: |
+          DEPLOY_RESPONSE=$(curl -X POST \
+            "https://api.render.com/v1/services/${{ secrets.RENDER_SERVICE_ID }}/deploys" \
+            -H "accept: application/json" \
+            -H "authorization: Bearer ${{ secrets.RENDER_API_KEY }}")
+          
+          DEPLOY_ID=$(echo $DEPLOY_RESPONSE | jq -r '.id')
+          echo "deploy_id=$DEPLOY_ID" >> $GITHUB_OUTPUT
+          
+      - name: Wait for Deploy to Complete
+        run: |
+          while true; do
+            DEPLOY_STATUS=$(curl \
+              "https://api.render.com/v1/services/${{ secrets.RENDER_SERVICE_ID }}/deploys/${{ steps.deploy.outputs.deploy_id }}" \
+              -H "accept: application/json" \
+              -H "authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
+              | jq -r '.status')
+            
+            if [ "$DEPLOY_STATUS" = "live" ]; then
+              echo "Deployment successful!"
+              exit 0
+            elif [ "$DEPLOY_STATUS" = "failed" ]; then
+              echo "Deployment failed!"
+              exit 1
+            fi
+            
+            echo "Deployment status: $DEPLOY_STATUS"
+            sleep 10
+          done
