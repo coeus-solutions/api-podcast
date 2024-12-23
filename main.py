@@ -18,7 +18,7 @@ Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
     title="Podcast Management API",
-    description="API for managing podcasts, transcriptions, and audio clips",
+    description="API for managing podcasts, transcriptions, and audio clips. (Testing GH Actions)",
     version="1.0.0",
     openapi_tags=[
         {"name": "Authentication", "description": "Operations with user authentication"},
