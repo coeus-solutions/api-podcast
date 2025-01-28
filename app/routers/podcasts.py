@@ -10,9 +10,9 @@ from app.database import get_db
 from app.models.models import User, Podcast, KeyPoint
 from app.schemas.schemas import PodcastCreate, Podcast as PodcastSchema, KeyPoint as KeyPointSchema
 from app.routers.auth import get_current_user
-from app.services.openai_service import transcribe_audio, extract_key_points
-from app.services.cloudinary_service import upload_audio, create_audio_clip, delete_audio
-from app.config import settings, ALLOWED_AUDIO_TYPES, MAX_FILE_SIZE
+from app.services.openai_service import transcribe_video, extract_key_points
+from app.services.cloudinary_service import upload_video, create_video_clip, delete_audio
+from app.config import settings, ALLOWED_MEDIA_TYPES, MAX_FILE_SIZE
 
 router = APIRouter()
 
@@ -29,10 +29,10 @@ async def create_podcast(
     db: Session = Depends(get_db)
 ):
     # Validate file type
-    if file.content_type not in ALLOWED_AUDIO_TYPES:
+    if file.content_type not in ALLOWED_MEDIA_TYPES:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"File type not allowed. Allowed types: {', '.join(ALLOWED_AUDIO_TYPES)}"
+            detail=f"File type not allowed. Allowed types: {', '.join(ALLOWED_MEDIA_TYPES)}"
         )
 
     try:
@@ -45,7 +45,9 @@ async def create_podcast(
             )
         
         # Upload to Cloudinary
-        cloudinary_url = await upload_audio(file_contents)
+        upload_result = await upload_video(file_contents)
+        cloudinary_url = upload_result["url"]
+        video_duration = upload_result["duration"]
         
         # Create podcast record
         db_podcast = Podcast(
@@ -58,8 +60,8 @@ async def create_podcast(
         db.refresh(db_podcast)
         
         # Start transcription and key point extraction
-        transcript = await transcribe_audio(cloudinary_url)
-        key_points = await extract_key_points(transcript)
+        transcript = await transcribe_video(cloudinary_url)
+        key_points = await extract_key_points(transcript, video_duration)
         
         # Update podcast with transcript
         db_podcast.transcript = transcript
@@ -67,7 +69,7 @@ async def create_podcast(
         
         # Create key points
         for point in key_points:
-            clip_url = await create_audio_clip(cloudinary_url, point["start_time"], point["end_time"])
+            clip_url = await create_video_clip(cloudinary_url, point["start_time"], point["end_time"])
             db_key_point = KeyPoint(
                 content=point["content"],
                 start_time=point["start_time"],

@@ -32,7 +32,7 @@ class Settings(BaseSettings):
 
 # Constants
 MAX_FILE_SIZE: int = 104857600  # 100MB
-ALLOWED_AUDIO_TYPES: List[str] = ["audio/mpeg", "audio/mp3"]
-CLOUDINARY_FOLDER: str = "podcast_clips"
+ALLOWED_MEDIA_TYPES: List[str] = ["video/mp4", "video/quicktime", "video/x-msvideo", "video/webm"]
+CLOUDINARY_FOLDER: str = "video_clips"
 
 settings = Settings() 

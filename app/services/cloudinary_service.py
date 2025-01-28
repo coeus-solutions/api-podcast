@@ -10,35 +10,38 @@ cloudinary.config(
     api_secret=settings.CLOUDINARY_API_SECRET
 )
 
-async def upload_audio(file_contents: bytes, resource_type: str = "auto") -> str:
+async def upload_video(file_contents: bytes, resource_type: str = "video") -> dict:
     """
-    Upload an audio file to Cloudinary
-    Returns the public URL of the uploaded file
+    Upload a video file to Cloudinary
+    Returns a dictionary containing the public URL and duration of the uploaded file
     """
     try:
         result = cloudinary.uploader.upload(
             file_contents,
             resource_type=resource_type,
             folder=CLOUDINARY_FOLDER,
-            format="mp3"
+            format="mp4"
         )
-        return result["secure_url"]
+        return {
+            "url": result["secure_url"],
+            "duration": result.get("duration", 0)  # Duration in seconds
+        }
     except Exception as e:
         print(f"Error uploading to Cloudinary: {str(e)}")
         raise
 
-async def create_audio_clip(source_url: str, start_time: float, end_time: float) -> str:
+async def create_video_clip(source_url: str, start_time: float, end_time: float) -> str:
     """
-    Create an audio clip from a source audio using Cloudinary's transformation capabilities
+    Create a video clip from a source video using Cloudinary's transformation capabilities
     Returns the URL of the generated clip
     """
     try:
-        # Create a new transformation for the audio clip
+        # Create a new transformation for the video clip
         transformation = {
-            'resource_type': 'video',  # Cloudinary uses 'video' type for audio
+            'resource_type': 'video',
             'start_offset': f"{start_time:.2f}",
             'end_offset': f"{end_time:.2f}",
-            'format': 'mp3'
+            'format': 'mp4'
         }
         
         # Generate a new URL with the transformation
@@ -52,10 +55,10 @@ async def create_audio_clip(source_url: str, start_time: float, end_time: float)
             folder=f"{CLOUDINARY_FOLDER}/clips"
         )
         
-        # Return the URL of the transformed audio
+        # Return the URL of the transformed video
         return result["eager"][0]["secure_url"]
     except Exception as e:
-        print(f"Error creating audio clip in Cloudinary: {str(e)}")
+        print(f"Error creating video clip in Cloudinary: {str(e)}")
         raise
 
 async def delete_audio(public_id: str, resource_type: str = "video"):
