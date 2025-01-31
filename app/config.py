@@ -40,7 +40,7 @@ class Settings(BaseSettings):
         env_file = ".env"
 
 # Constants
-MAX_FILE_SIZE: int = 104857600  # 100MB
+MAX_FILE_SIZE: int = 104857600 # 100MB
 ALLOWED_MEDIA_TYPES: List[str] = ["video/mp4", "video/quicktime", "video/x-msvideo", "video/webm"]
 CLOUDINARY_FOLDER: str = "video_clips"
 
