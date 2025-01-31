@@ -22,6 +22,7 @@ async def upload_video(file_contents: bytes, resource_type: str = "video") -> di
             folder=CLOUDINARY_FOLDER,
             format="mp4"
         )
+        print("here5")
         return {
             "url": result["secure_url"],
             "duration": result.get("duration", 0)  # Duration in seconds

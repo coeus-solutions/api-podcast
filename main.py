@@ -7,7 +7,7 @@ import os
 from dotenv import load_dotenv
 
 from app.database import engine, Base
-from app.routers import auth, podcasts
+from app.routers import auth, podcasts, payments
 from app.config import settings
 
 # Load environment variables
@@ -23,6 +23,7 @@ app = FastAPI(
     openapi_tags=[
         {"name": "Authentication", "description": "Operations with user authentication"},
         {"name": "Podcasts", "description": "Operations with podcasts and clips"},
+        {"name": "Payments", "description": "Operations for token purchases and payments"},
     ]
 )
 
@@ -38,6 +39,7 @@ app.add_middleware(
 # Include routers
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["Authentication"])
 app.include_router(podcasts.router, prefix="/api/v1/podcasts", tags=["Podcasts"])
+app.include_router(payments.router, prefix="/api/v1/payments", tags=["Payments"])
 
 @app.get("/")
 async def root():

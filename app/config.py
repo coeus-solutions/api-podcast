@@ -9,7 +9,7 @@ class Settings(BaseSettings):
     # API Settings
     SECRET_KEY: str = os.getenv("SECRET_KEY", "your-secret-key-here")
     ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30000
     
     # OpenAI Settings
     OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY")
@@ -18,6 +18,15 @@ class Settings(BaseSettings):
     CLOUDINARY_CLOUD_NAME: str = os.getenv("CLOUDINARY_CLOUD_NAME")
     CLOUDINARY_API_KEY: str = os.getenv("CLOUDINARY_API_KEY")
     CLOUDINARY_API_SECRET: str = os.getenv("CLOUDINARY_API_SECRET")
+    
+    # Stripe Settings
+    STRIPE_SECRET_KEY: str = os.getenv("STRIPE_SECRET_KEY")
+    STRIPE_WEBHOOK_SECRET: str = os.getenv("STRIPE_WEBHOOK_SECRET")
+    STRIPE_SUCCESS_URL: str = os.getenv("STRIPE_SUCCESS_URL", "http://localhost:3000/payment/success")
+    STRIPE_CANCEL_URL: str = os.getenv("STRIPE_CANCEL_URL", "http://localhost:3000/payment/cancel")
+    
+    # Token Pricing (in cents)
+    TOKEN_PRICE_PER_1000: int = 100  # $1 per 1000 tokens
     
     # Supabase Settings
     SUPABASE_URL: str = os.getenv("SUPABASE_URL")

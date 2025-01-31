@@ -5,6 +5,7 @@ from typing import List, Optional
 import json
 import os
 import aiofiles
+import datetime
 
 from app.database import get_db
 from app.models.models import User, Podcast, KeyPoint
@@ -21,6 +22,29 @@ UPLOAD_DIR = "uploads"
 if not os.path.exists(UPLOAD_DIR):
     os.makedirs(UPLOAD_DIR)
 
+def check_token_balance(user: User, required_tokens: int):
+    """Check if user has enough tokens and raise HTTPException if insufficient"""
+    try:
+        if user is None:
+            raise HTTPException(status_code=401, detail="User not found")
+            
+        if user.total_tokens is None:
+            user.total_tokens = 0
+        if user.used_tokens is None:
+            user.used_tokens = 0
+            
+        available_tokens = user.total_tokens - user.used_tokens
+        if available_tokens < required_tokens:
+            raise HTTPException(
+                status_code=402,
+                detail=f"Insufficient tokens. You need {required_tokens} tokens but have {available_tokens} available. Please purchase more tokens."
+            )
+    except HTTPException as he:
+        raise he
+    except Exception as e:
+        print(f"Error checking token balance: {str(e)}")
+        raise HTTPException(status_code=500, detail="Error checking token balance")
+
 @router.post("/", response_model=PodcastSchema, description="Upload a new podcast")
 async def create_podcast(
     title: str = Form(...),
@@ -36,6 +60,10 @@ async def create_podcast(
         )
 
     try:
+        # Estimate token usage for transcription (approximately 1 token per second)
+        estimated_tokens = 600  # Base estimate for a short video
+        check_token_balance(current_user, estimated_tokens)
+        
         # Read file contents
         file_contents = await file.read()
         if len(file_contents) > MAX_FILE_SIZE:
@@ -60,14 +88,25 @@ async def create_podcast(
         db.refresh(db_podcast)
         
         # Start transcription and key point extraction
-        transcript = await transcribe_video(cloudinary_url)
-        key_points = await extract_key_points(transcript, video_duration)
+        print("starting to transcribe video")
+        start_time = datetime.datetime.now()
+        transcript = await transcribe_video(cloudinary_url, db, current_user)
+        end_time = datetime.datetime.now()
+        print(f"transcription took {end_time - start_time} seconds")
+        
+        print("starting to extract key points")
+        start_time = datetime.datetime.now()
+        key_points = await extract_key_points(transcript, video_duration, db, current_user)
+        end_time = datetime.datetime.now()
+        print(f"key point extraction took {end_time - start_time} seconds")
         
         # Update podcast with transcript
         db_podcast.transcript = transcript
         db.commit()
         
         # Create key points
+        print("starting to create video clips")
+        start_time = datetime.datetime.now()
         for point in key_points:
             clip_url = await create_video_clip(cloudinary_url, point["start_time"], point["end_time"])
             db_key_point = KeyPoint(
@@ -81,17 +120,30 @@ async def create_podcast(
         
         db.commit()
         db.refresh(db_podcast)
+        end_time = datetime.datetime.now()
+        print(f"video clips creation took {end_time - start_time} seconds")
         return db_podcast
         
-        
+    except HTTPException as he:
+        if he.status_code == 402:
+            raise HTTPException(
+                status_code=402,
+                detail=f"Insufficient tokens."
+            )
+        # If there's an error, try to clean up any created resources
+        if 'db_podcast' in locals():
+            db.delete(db_podcast)
+            db.commit()
+        raise he  # Re-raise the HTTP exception
     except Exception as e:
+
         # If there's an error, try to clean up any created resources
         if 'db_podcast' in locals():
             db.delete(db_podcast)
             db.commit()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e)
+            detail="An error occurred while processing your request. Please try again."
         )
 
 @router.get("/", response_model=List[PodcastSchema], description="List all podcasts")

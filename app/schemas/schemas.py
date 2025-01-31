@@ -5,6 +5,8 @@ from datetime import datetime
 class UserBase(BaseModel):
     email: EmailStr
     name: Optional[str] = None
+    total_tokens: int = 0
+    used_tokens: int = 0
 
 class UserCreate(UserBase):
     password: str

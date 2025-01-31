@@ -4,11 +4,24 @@ import json
 import requests
 import tempfile
 import os
+import tiktoken
 from app.config import settings
+from app.services import stripe_service
+from sqlalchemy.orm import Session
+from app.models.models import User
+from fastapi import HTTPException
 
+def get_token_count(text: str, model: str = "gpt-4") -> int:
+    """Calculate the number of tokens in a text string"""
+    try:
+        encoding = tiktoken.encoding_for_model(model)
+        return len(encoding.encode(text))
+    except KeyError:
+        # Fallback to cl100k_base encoding if model not found
+        encoding = tiktoken.get_encoding("cl100k_base")
+        return len(encoding.encode(text))
 
-
-async def transcribe_audio(file_url: str) -> str:
+async def transcribe_audio(file_url: str, db: Session, user: User) -> str:
     """
     Transcribe audio file using OpenAI Whisper API
     """
@@ -17,41 +30,38 @@ async def transcribe_audio(file_url: str) -> str:
     )
 
     try:
-        # Download the file from Cloudinary
         response = requests.get(file_url)
-        response.raise_for_status()  # Raise an exception for bad status codes
+        response.raise_for_status()
 
-        # Create a temporary file
         with tempfile.NamedTemporaryFile(delete=False, suffix='.mp3') as temp_file:
             temp_file.write(response.content)
             temp_file_path = temp_file.name
 
         try:
-            # Transcribe the temporary file
             with open(temp_file_path, 'rb') as audio_file:
                 transcript = client.audio.transcriptions.create(
                     model="whisper-1",
                     file=audio_file,
                     response_format="text"
                 )
+            
+            # Calculate actual tokens used for the transcript
+            actual_tokens = get_token_count(transcript)
+            stripe_service.calculate_tokens_used(actual_tokens, db, user)
             return transcript
         finally:
-            # Clean up the temporary file
             if os.path.exists(temp_file_path):
                 os.remove(temp_file_path)
 
     except Exception as e:
         print(f"Error transcribing audio: {str(e)}")
-        raise
+        raise HTTPException(status_code=500, detail=f"Error transcribing audio: {str(e)}")
 
-async def extract_key_points(transcript: str, video_duration: float) -> list:
+async def extract_key_points(transcript: str, video_duration: float, db: Session, user: User) -> list:
     client = OpenAI(
         api_key=settings.OPENAI_API_KEY
     )
 
-    """
-    Extract key points from transcript using OpenAI GPT-4
-    """
     try:
         prompt = f"""
         Please analyze this podcast transcript and extract key points.
@@ -92,6 +102,10 @@ async def extract_key_points(transcript: str, video_duration: float) -> list:
             max_tokens=1500
         )
 
+        # Update token usage with actual usage from the response
+        actual_tokens = response.usage.total_tokens
+        stripe_service.calculate_tokens_used(actual_tokens, db, user)
+
         # Extract and validate the key points
         key_points = eval(response.choices[0].message.content)
         
@@ -100,12 +114,10 @@ async def extract_key_points(transcript: str, video_duration: float) -> list:
         last_end_time = 0
         
         for point in key_points:
-            # Ensure chronological order and no overlaps
-            start_time = max(point["start_time"], last_end_time + 5)  # 5 second gap minimum
-            end_time = min(start_time + 30, video_duration)  # Cap at 30 seconds and total duration
+            start_time = max(point["start_time"], last_end_time + 5)
+            end_time = min(start_time + 30, video_duration)
             
-            # Only add point if there's enough duration left
-            if end_time - start_time >= 15:  # Minimum 15 second clip
+            if end_time - start_time >= 15:
                 validated_points.append({
                     "content": point["content"],
                     "start_time": start_time,
@@ -116,9 +128,9 @@ async def extract_key_points(transcript: str, video_duration: float) -> list:
         return validated_points
     except Exception as e:
         print(f"Error extracting key points: {str(e)}")
-        raise
+        raise HTTPException(status_code=500, detail=f"Error extracting key points: {str(e)}")
 
-async def transcribe_video(file_url: str) -> str:
+async def transcribe_video(file_url: str, db: Session, user: User) -> str:
     """
     Transcribe video file using OpenAI Whisper API
     """
@@ -127,29 +139,32 @@ async def transcribe_video(file_url: str) -> str:
     )
 
     try:
-        # Download the file from Cloudinary
         response = requests.get(file_url)
-        response.raise_for_status()  # Raise an exception for bad status codes
+        response.raise_for_status()
 
-        # Create a temporary file
         with tempfile.NamedTemporaryFile(delete=False, suffix='.mp4') as temp_file:
             temp_file.write(response.content)
             temp_file_path = temp_file.name
 
         try:
-            # Transcribe the temporary file
             with open(temp_file_path, 'rb') as video_file:
                 transcript = client.audio.transcriptions.create(
                     model="whisper-1",
                     file=video_file,
                     response_format="text"
                 )
+            
+            # Calculate actual tokens used for the transcript
+            actual_tokens = get_token_count(transcript)
+            stripe_service.calculate_tokens_used(actual_tokens, db, user)
             return transcript
+        except Exception as e:
+            print(f"Error transcribing video content: {str(e)}")
+            raise HTTPException(status_code=500, detail=f"Error transcribing video content: {str(e)}")
         finally:
-            # Clean up the temporary file
             if os.path.exists(temp_file_path):
                 os.remove(temp_file_path)
 
     except Exception as e:
         print(f"Error transcribing video: {str(e)}")
-        raise 
+        raise HTTPException(status_code=500, detail=f"Error transcribing video: {str(e)}") 
