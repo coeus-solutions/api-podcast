@@ -18,7 +18,6 @@ async def create_checkout_session(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    print("here")
     """Create a Stripe checkout session for token purchase"""
     if request.token_amount < 1000:
         raise HTTPException(status_code=400, detail="Minimum token purchase is 1000 tokens")
