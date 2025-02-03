@@ -19,6 +19,8 @@ class User(Base):
     total_tokens = Column(Integer, default=0)
     used_tokens = Column(Integer, default=0)
     created_at = Column(DateTime, default=datetime.utcnow)
+    reset_otp = Column(String, nullable=True)
+    reset_otp_expiry = Column(DateTime, nullable=True)
     podcasts = relationship("Podcast", back_populates="owner")
     payments = relationship("PaymentHistory", back_populates="user")
 

@@ -35,6 +35,12 @@ class Settings(BaseSettings):
 
     # Render Settings
     RENDER_API_KEY: str = os.getenv("RENDER_API_KEY")
+    
+    # Mailjet Settings
+    MAILJET_API_KEY: str = os.getenv("MAILJET_API_KEY")
+    MAILJET_SECRET_KEY: str = os.getenv("MAILJET_SECRET_KEY")
+    MAILJET_SENDER_EMAIL: str = os.getenv("MAILJET_SENDER_EMAIL", "your-verified-sender@email.com")
+    MAILJET_SENDER_NAME: str = os.getenv("MAILJET_SENDER_NAME", "Podcast App")
 
     class Config:
         env_file = ".env"

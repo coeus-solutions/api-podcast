@@ -77,4 +77,19 @@ class Podcast(PodcastBase):
     key_points: List[KeyPoint] = []
 
     class Config:
-        from_attributes = True 
+        from_attributes = True
+
+class EmailSchema(BaseModel):
+    email: EmailStr
+
+class VerifyOTPSchema(BaseModel):
+    email: EmailStr
+    otp: str
+
+class ResetPasswordSchema(BaseModel):
+    email: EmailStr
+    otp: str
+    new_password: str
+
+class Message(BaseModel):
+    message: str 
