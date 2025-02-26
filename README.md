@@ -14,8 +14,9 @@ A FastAPI-based REST API for managing podcasts, extracting key points, and creat
 ## Prerequisites
 
 - Python 3.8+
-- FFmpeg (for audio processing)
+- FFmpeg (for video processing)
 - OpenAI API key
+- Supabase account and project
 
 ## Installation
 
@@ -36,11 +37,39 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-4. Create a `.env` file in the root directory with the following variables:
+4. Install FFmpeg:
+```bash
+# On Ubuntu/Debian
+sudo apt-get update
+sudo apt-get install ffmpeg
+
+# On macOS with Homebrew
+brew install ffmpeg
+
+# On Windows with Chocolatey
+choco install ffmpeg
+```
+
+5. Create a `.env` file in the root directory with the following variables:
 ```env
 SECRET_KEY=your-secret-key
 OPENAI_API_KEY=your-openai-api-key
+SUPABASE_URL=your-supabase-url
+SUPABASE_SERVICE_ROLE_KEY=your-supabase-service-role-key
+SUPABASE_ANON_KEY=your-supabase-anon-key
+SUPABASE_DB_URL=your-supabase-db-url
+SUPABASE_STORAGE_BUCKET=videos
 ```
+
+6. Set up Supabase:
+   - Create a new Supabase project
+   - Create a storage bucket named 'videos' with these settings:
+     - Set bucket to "private"
+     - Enable "Public URLs" feature
+   - Configure Storage RLS policies for the 'videos' bucket:
+     ```sql
+     -- Allow authenticated users to upload files
+   - Update your .env file with the Supabase credentials
 
 ## Running the API
 
