@@ -1,8 +1,9 @@
 from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Text, Float, Enum
 from sqlalchemy.orm import relationship
-from datetime import datetime
+from datetime import datetime, timedelta
 import enum
 from app.database import Base
+from app.services.storage_service import get_signed_url
 
 class PaymentStatus(enum.Enum):
     PENDING = "pending"
@@ -32,6 +33,7 @@ class User(Base):
             "total_tokens": self.total_tokens,
             "used_tokens": self.used_tokens
         }
+
 class Podcast(Base):
     __tablename__ = "podcasts"
 
@@ -45,6 +47,16 @@ class Podcast(Base):
     owner = relationship("User", back_populates="podcasts")
     key_points = relationship("KeyPoint", back_populates="podcast", cascade="all, delete-orphan")
 
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "title": self.title,
+            "file_path": get_signed_url(self.file_path, timedelta(hours=1)),
+            "transcript": self.transcript,
+            "created_at": self.created_at,
+            "owner_id": self.owner_id
+        }
+
 class KeyPoint(Base):
     __tablename__ = "key_points"
 
@@ -57,6 +69,17 @@ class KeyPoint(Base):
     podcast_id = Column(Integer, ForeignKey("podcasts.id"))
     
     podcast = relationship("Podcast", back_populates="key_points")
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "content": self.content,
+            "start_time": self.start_time,
+            "end_time": self.end_time,
+            "file_path": get_signed_url(self.file_path, timedelta(hours=1)),
+            "created_at": self.created_at,
+            "podcast_id": self.podcast_id
+        }
 
 class PaymentHistory(Base):
     __tablename__ = "payment_history"

@@ -228,7 +228,7 @@ async def extract_key_points(transcript: str, video_duration: float, db: Session
         return validated_points
     except Exception as e:
         print(f"Error extracting key points: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error extracting key points: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error extracting key points")
 
 async def transcribe_video(file_url: str, db: Session, user: User) -> str:
     """
@@ -302,4 +302,4 @@ async def transcribe_video(file_url: str, db: Session, user: User) -> str:
 
     except Exception as e:
         print(f"Error transcribing video: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error transcribing video: {str(e)}") 
+        raise HTTPException(status_code=500, detail=f"Error transcribing video") 

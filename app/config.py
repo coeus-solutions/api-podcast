@@ -14,11 +14,6 @@ class Settings(BaseSettings):
     # OpenAI Settings
     OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY")
     
-    # Cloudinary Settings
-    CLOUDINARY_CLOUD_NAME: str = os.getenv("CLOUDINARY_CLOUD_NAME")
-    CLOUDINARY_API_KEY: str = os.getenv("CLOUDINARY_API_KEY")
-    CLOUDINARY_API_SECRET: str = os.getenv("CLOUDINARY_API_SECRET")
-    
     # Stripe Settings
     STRIPE_SECRET_KEY: str = os.getenv("STRIPE_SECRET_KEY")
     STRIPE_WEBHOOK_SECRET: str = os.getenv("STRIPE_WEBHOOK_SECRET")
@@ -30,8 +25,10 @@ class Settings(BaseSettings):
     
     # Supabase Settings
     SUPABASE_URL: str = os.getenv("SUPABASE_URL")
-    SUPABASE_KEY: str = os.getenv("SUPABASE_KEY")
+    SUPABASE_SERVICE_ROLE_KEY: str = os.getenv("SUPABASE_SERVICE_ROLE_KEY")  # Using service role key for storage operations
+    SUPABASE_ANON_KEY: str = os.getenv("SUPABASE_ANON_KEY")  # Keep anon key for client-side operations
     SUPABASE_DB_URL: str = os.getenv("SUPABASE_DB_URL")
+    SUPABASE_STORAGE_BUCKET: str = os.getenv("SUPABASE_STORAGE_BUCKET", "videos")
 
     # Render Settings
     RENDER_API_KEY: str = os.getenv("RENDER_API_KEY")
@@ -48,6 +45,5 @@ class Settings(BaseSettings):
 # Constants
 MAX_FILE_SIZE: int = 104857600 # 100MB
 ALLOWED_MEDIA_TYPES: List[str] = ["video/mp4", "video/quicktime", "video/x-msvideo", "video/webm"]
-CLOUDINARY_FOLDER: str = "video_clips"
 
 settings = Settings() 
