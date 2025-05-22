@@ -190,6 +190,7 @@ async def extract_key_points(transcript: str, video_duration: float, db: Session
         try:
             print(f"response: {response.choices[0].message.content}")
             response_content = response.choices[0].message.content.strip()
+            response_content = response_content.replace("```json", "").replace("```", "")
             key_points = json.loads(response_content)
             
             if not isinstance(key_points, list):
