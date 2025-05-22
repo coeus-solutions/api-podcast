@@ -169,7 +169,7 @@ async def extract_key_points(transcript: str, video_duration: float, db: Session
         - Maintain chronological order
         - No overlapping segments
         - Leave gaps between segments
-        - Return ONLY the JSON array, NO TEXT SHOULD APPEAR BEFORE OR AFTER THE JSON ARRAY
+        - The response should be a valid JSON array, NO TEXT SHOULD APPEAR BEFORE OR AFTER THE JSON ARRAY
         """
 
         response = client.chat.completions.create(
